@@ -183,7 +183,7 @@ Configurations:
     Id: 'windows-11_23H2-msvc2022-developer-build'
     Template: 'qtci-windows-11_23H2-x86_64-53'
     Compiler: 'MSVC2022'
-    Features: ['Sccache', 'DebugAndRelease', 'WarningsAreErrors', 'UseConfigure']
+    Features: ['Sccache', 'DebugAndRelease', 'WarningsAreErrors', 'UseConfigure', 'StandaloneExamples']
     Configure arguments: '-debug-and-release -make examples -developer-build -force-debug-info -qt-zlib -c++std c++20'
     Environment variables: [
         'CMAKE_ARGS=-DFEATURE_msvc_obj_debug_info=ON -DOPENSSL_ROOT_DIR={{.Env.OPENSSL_INCLUDE_x64}}\.. -DMySQL_ROOT={{.Env.ENV_MySQL_ROOT}} -DMySQL_LIBRARY_DIR={{.Env.ENV_MySQL_LIBRARY_DIR}}',
@@ -193,7 +193,7 @@ Configurations:
     ]
 -
     Id: 'rhel-8.10'
-    Template: 'qtci-linux-RHEL-8.10-x86_64-50'
+    Template: 'qtci-linux-RHEL-8.10-x86_64-51'
     Compiler: 'GCC'
     Features: ['Packaging', 'Sccache', 'UseConfigure', 'InstallQt5Dependencies', 'GenerateSBOM', 'VerifySBOM']
     Configure arguments: '-nomake examples -release -force-debug-info -headersclean -separate-debug-info -qt-libjpeg -qt-libpng -qt-pcre -qt-harfbuzz -qt-doubleconversion -no-libudev -bundled-xcb-xinput'
@@ -297,10 +297,9 @@ Configurations:
     # new qdoc warnings are introduced. The resulting documentation
     # is not used for anything (neither online or offline docs). See
     # qt5.yaml for a config that builds offline docs.
-    # FIXME: Add feature flag that avoids running the Qt auto tests
     Id: 'documentation-warnings'
     Template: 'qtci-linux-Ubuntu-22.04-x86_64-51'
     Compiler: 'GCC'
-    Features: ['Sccache', 'TestOnly', 'TestDocs']
+    Features: ['Sccache', 'TestOnly', 'TestDocs', 'DoNotRunTestsButCreateTestWorkItem']
     Platform dependency: 'ubuntu-22.04'
 
