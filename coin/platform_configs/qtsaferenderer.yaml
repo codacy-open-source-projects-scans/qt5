@@ -2,14 +2,15 @@ Version: 2
 Include: [
   macos.yaml: [
      "macos-universal-on-x86_64",
-     "macos-12-x86_64-tests",
-     "macos-12-arm-on-arm64-tests"
+     "macos-13-x86_64-tests",
+     "macos-13-arm-on-arm64-tests"
   ],
   cmake_platforms.yaml: [
     "ubuntu-22.04",
     "ubuntu-22.04-developer-build",
-    "opensuse-15.5-developer-build",
+    "opensuse-15.6-developer-build",
     "sles-15_sp5-static",
+    "sles-15_sp6-static",
     "windows-10_22h2-msvc2022",
     "rhel-8.10",
     "windows-10_22h2-mingw13",
@@ -27,7 +28,7 @@ Include: [
 Configurations:
 -
     Id: 'macos-latest-xcode-universal-static-build'
-    Template: 'qtci-macos-12-x86_64-107'
+    Template: 'qtci-macos-13-arm-107'
     Compiler: 'Clang'
     Target arch: 'x86_64-arm64'
     Features: ['Packaging', 'Sccache', 'UseConfigure', 'MinimalStaticTests']
@@ -47,7 +48,7 @@ Configurations:
     ]
 -
     Id: 'Windows-MSVC2022_Static'
-    Template: 'qtci-windows-10_22H2-x86_64-52'
+    Template: 'qtci-windows-10_22H2-x86_64-53'
     Compiler: 'MSVC2022'
     Features: ['Packaging', 'Sccache', 'UseConfigure', 'MinimalStaticTests']
     Configure arguments: '-release -headersclean -nomake examples -qt-zlib -static -no-icu -no-sql-mysql -no-sql-odbc -no-sql-psql'

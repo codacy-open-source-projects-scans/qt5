@@ -1,5 +1,7 @@
 # Copyright (C) 2023 The Qt Company Ltd.
 # SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+param([string]$arch="x64")
+
 . "$PSScriptRoot\helpers.ps1"
 
 # This script will install vcpkg
@@ -21,14 +23,40 @@ git.exe -C "$vcpkgRoot" checkout "tags/$vcpkgVersion"
 
 # Download vcpkg-tool, i.e., vcpkg.exe
 
-$n = Get-Content "$PSScriptRoot\..\shared\vcpkg_tool_release_tag.txt"
-$n = $n.Split('=')
-$vcpkgExeReleaseTag = $n[1]
+$releaseTagFileContent = Get-Content "$PSScriptRoot\..\shared\vcpkg_tool_release_tag.txt"
+$n = $releaseTagFileContent.Split("`n")
+$sha1key = "windows_" + $arch + "_sha1"
+foreach ($keyValue in $n) {
+    $keyValue = $keyValue.Split('=')
+    if($keyValue[0] -eq "vcpkg_tool_release_tag") {
+        $vcpkgExeReleaseTag = $keyValue[1]
+    } elseif($keyValue[0] -eq $sha1key) {
+        $vcpkgExeSHA1 = $keyValue[1]
+    }
+}
+
+if(!$vcpkgExeReleaseTag) {
+    Write-Host "Unable to read release tag from $PSScriptRoot\..\shared\vcpkg_tool_release_tag.txt"
+    Write-Host "Content:"
+    Write-Host "$releaseTagFileContent"
+    exit 1
+}
 $nonDottedReleaseTag = $vcpkgExeReleaseTag.replace('-', "")
 
-$vcpkgExeOfficialUrl = "https://github.com/microsoft/vcpkg-tool/releases/download/$vcpkgExeReleaseTag/vcpkg.exe"
-$vcpkgExeCacheUrl = "\\ci-files01-hki.ci.qt.io\provisioning\vcpkg\vcpkg-$nonDottedReleaseTag-windows-x64.exe"
-$vcpkgExeSHA1 = "F74DCDE7F6F5082EF6DC31FED486FAD69BE8D442"
+if(!$vcpkgExeSHA1) {
+    Write-Host "Unable to read vcpkg tool SHA1 from $PSScriptRoot\..\shared\vcpkg_tool_release_tag.txt"
+    Write-Host "Content:"
+    Write-Host "$releaseTagFileContent"
+    exit 1
+}
+
+$suffix = "-$arch"
+if($arch -eq "x64") {
+    $suffix = ""
+}
+
+$vcpkgExeOfficialUrl = "https://github.com/microsoft/vcpkg-tool/releases/download/$vcpkgExeReleaseTag/vcpkg$suffix.exe"
+$vcpkgExeCacheUrl = "\\ci-files01-hki.ci.qt.io\provisioning\vcpkg\vcpkg-$nonDottedReleaseTag-windows-$arch.exe"
 $vcpkgExe = "C:\Windows\Temp\vcpkg.exe"
 
 Download "$vcpkgExeOfficialUrl" "$vcpkgExeCacheUrl" "$vcpkgExe"
@@ -42,6 +70,10 @@ if(![System.IO.File]::Exists("$vcpkgRoot\vcpkg.exe")){
 
 # Disable telemetry
 Set-Content -Value "" -Path "$vcpkgRoot\vcpkg.disable-metrics" -Force
+
+# Bootstrap vcpkg
+Set-Location -Path "$vcpkgRoot"
+cmd.exe /c "$vcpkgRoot\bootstrap-vcpkg.bat"
 
 # Setting VCPKG_ROOT using Set-EnvironmentVariable makes the variable only
 # available during build time. In order to make it available during the

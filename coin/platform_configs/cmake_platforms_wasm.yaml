@@ -2,19 +2,19 @@ Version: 2
 Configurations:
 -
     Id: 'webassembly-linux-thread-asyncify'
-    Template: 'qtci-linux-openSUSE-15.5-x86_64-52'
+    Template: 'qtci-linux-openSUSE-15.6-x86_64-51'
     Target os: 'WebAssembly'
     Compiler: 'GCC'
-    Platform dependency: 'opensuse-15.5-developer-build'
+    Platform dependency: 'opensuse-15.6-developer-build'
     Features: ['Sccache', 'DoNotRunTests', 'UseConfigure']
     Environment variables: [
         'EM_CONFIG={{.Env.EMSDK}}/.emscripten',
         "TARGET_CONFIGURE_ARGS=-release -platform wasm-emscripten -nomake examples -feature-thread \
-        -DQT_QMAKE_DEVICE_OPTIONS=\"QT_EMSCRIPTEN_ASYNCIFY=1\""
+         -feature-exceptions -DQT_QMAKE_DEVICE_OPTIONS=\"QT_EMSCRIPTEN_ASYNCIFY=1\""
     ]
 -
     Id: 'webassembly-windows'
-    Template: 'qtci-windows-10_22H2-x86_64-52'
+    Template: 'qtci-windows-10_22H2-x86_64-53'
     Target os: 'WebAssembly'
     Compiler: 'Mingw'
     Target compiler: 'Clang'
@@ -29,10 +29,10 @@ Configurations:
     ]
 -
     Id: 'webassembly-linux-thread'
-    Template: 'qtci-linux-openSUSE-15.5-x86_64-52'
+    Template: 'qtci-linux-openSUSE-15.6-x86_64-51'
     Target os: 'WebAssembly'
     Compiler: 'GCC'
-    Platform dependency: 'opensuse-15.5-developer-build'
+    Platform dependency: 'opensuse-15.6-developer-build'
     Features: ['Packaging', 'Sccache', 'DisableTests', 'UseConfigure', 'GenerateSBOM', 'VerifySBOM']
     Environment variables: [
         'EM_CONFIG={{.Env.EMSDK}}/.emscripten',
@@ -42,15 +42,14 @@ Configurations:
     ]
 -
     Id: 'webassembly-linux-shared'
-    Template: 'qtci-linux-openSUSE-15.5-x86_64-52'
+    Template: 'qtci-linux-openSUSE-15.6-x86_64-51'
     Target os: 'WebAssembly'
     Compiler: 'GCC'
-    Platform dependency: 'opensuse-15.5-developer-build'
-    Features: ['Packaging', 'Sccache', 'DisableTests', 'UseConfigure', 'GenerateSBOM', 'VerifySBOM']
+    Platform dependency: 'opensuse-15.6-developer-build'
+    Features: ['Sccache', 'DisableTests', 'UseConfigure', 'GenerateSBOM', 'VerifySBOM']
     Environment variables: [
         'EM_CONFIG={{.Env.EMSDK}}/.emscripten',
         'TARGET_CONFIGURE_ARGS=-release -platform wasm-emscripten -no-feature-thread -nomake tests -nomake examples -shared',
         'NON_QTBASE_TARGET_CMAKE_ARGS=-DQT_ADDITIONAL_HOST_PACKAGES_PREFIX_PATH=/usr/local -DQT_PROTOBUF_WELL_KNOWN_TYPES_PROTO_DIR=/usr/local/include',
         'TARGET_CMAKE_ARGS=-DQT_GENERATE_WRAPPER_SCRIPTS_FOR_ALL_HOSTS=ON'
     ]
-

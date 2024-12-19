@@ -148,9 +148,7 @@ installPackages+=(libcurl4-openssl-dev)
 installPackages+=(libicu-dev)
 installPackages+=(zlib1g-dev)
 installPackages+=(zlib1g)
-installPackages+=(openjdk-8-jdk)
-#Java 11 for Android
-installPackages+=(openjdk-11-jdk)
+installPackages+=(openjdk-17-jdk)
 installPackages+=(libgtk-3-dev)
 installPackages+=(ninja-build)
 installPackages+=(libssl-dev)
@@ -256,6 +254,11 @@ pip install --user -r "${BASH_SOURCE%/*}/../common/shared/sbom_requirements.txt"
 
 source "${BASH_SOURCE%/*}/../common/unix/SetEnvVar.sh"
 # SetEnvVar "PATH" "/usr/lib/nodejs-mozilla/bin:\$PATH"
+
+# Provisioning during installation says:
+# 'The script sbom2doc is installed in '/home/qt/.local/bin' which is not on PATH.'
+# hence the explicit assignment to SBOM_PYTHON_APPS_PATH.
+SetEnvVar "SBOM_PYTHON_APPS_PATH" "/home/qt/.local/bin"
 
 OpenSSLVersion="$(openssl version |cut -b 9-14)"
 echo "System's OpenSSL = $OpenSSLVersion" >> ~/versions.txt
