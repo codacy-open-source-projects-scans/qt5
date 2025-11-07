@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright (C) 2022 The Qt Company Ltd.
+# Copyright (C) 2025 The Qt Company Ltd.
 # SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 
 # Install required packages with APT
@@ -20,18 +20,16 @@ function set_internal_repo {
     sudo mv /etc/apt/apt.conf.d/50appstream{,.disabled}
 
     sudo tee "/etc/apt/sources.list.d/ubuntu.list" > /dev/null <<-EOC
-    deb [arch=amd64] http://repo-clones.ci.qt.io/apt-mirror/mirror/ubuntu/ noble main restricted universe multiverse
-    deb [arch=amd64] http://repo-clones.ci.qt.io/apt-mirror/mirror/ubuntu/ noble-updates main restricted universe multiverse
-    deb [arch=amd64] http://repo-clones.ci.qt.io/apt-mirror/mirror/ubuntu/ noble-backports main restricted universe
-    deb [arch=amd64] http://repo-clones.ci.qt.io/apt-mirror/mirror/ubuntu/ noble-security main restricted universe multiverse
-    deb [arch=i386] http://repo-clones.ci.qt.io/apt-mirror/mirror/ubuntu/ noble main restricted
-    deb [arch=i386] http://repo-clones.ci.qt.io/apt-mirror/mirror/ubuntu/ noble-updates main restricted
-    deb [arch=i386] http://repo-clones.ci.qt.io/apt-mirror/mirror/ubuntu/ noble universe
+    deb [arch=amd64 trusted=yes] http://repo-clones-apt.ci.qt.io:8080 noble-amd64 main restricted universe multiverse
+    deb [arch=amd64 trusted=yes] http://repo-clones-apt.ci.qt.io:8080 noble-updates-amd64 main restricted universe multiverse
+    deb [arch=amd64 trusted=yes] http://repo-clones-apt.ci.qt.io:8080 noble-backports-amd64 main restricted universe
+    deb [arch=amd64 trusted=yes] http://repo-clones-apt.ci.qt.io:8080 noble-security-amd64 main restricted universe multiverse
+    deb [arch=i386 trusted=yes] http://repo-clones-apt.ci.qt.io:8080 noble-i386 main restricted universe multiverse
+    deb [arch=i386 trusted=yes] http://repo-clones-apt.ci.qt.io:8080 noble-updates-i386 main restricted universe multiverse
 EOC
 }
 
-#(ping -c 3 repo-clones.ci.qt.io && set_internal_repo) || echo "Internal package repository not found. Using public repositories."
-echo "Internal package repository not loading Translation en package (QTQAINFRA-6297). Using public repositories."
+(ping -c 3 repo-clones-apt.ci.qt.io && set_internal_repo) || echo "Internal package repository not found. Using public repositories."
 
 # Make sure needed ca-certificates are available
 sudo apt-get install --reinstall ca-certificates
@@ -153,6 +151,8 @@ installPackages+=(zlib1g)
 installPackages+=(openjdk-8-jdk)
 #Java 17 for Android, needed by RTA
 installPackages+=(openjdk-17-jdk)
+# Java 21 for QtBridges
+installPackages+=(openjdk-21-jdk)
 installPackages+=(libgtk-3-dev)
 installPackages+=(ninja-build)
 installPackages+=(libssl-dev)
@@ -186,6 +186,7 @@ installPackages+=(virtualbox)
 installPackages+=(dkms)
 # Needed for qtspeech
 installPackages+=(libspeechd-dev)
+installPackages+=(flite1-dev)
 #Pypdf for PDF reading in RTA tests
 installPackages+=(python3-pypdf2)
 # Needed for b2qt
@@ -244,8 +245,6 @@ installPackages+=(keyutils)
 installPackages+=(cifs-utils)
 # VxWorks QEMU network setup (tunctl)
 installPackages+=(uml-utilities)
-# used for reading vcpkg packages version, from vcpkg.json
-installPackages+=(jq)
 
 installPackages+=(patchelf)
 
@@ -261,7 +260,7 @@ pip config --user set global.index https://ci-files01-hki.ci.qt.io/input/python_
 pip config --user set global.extra-index-url https://pypi.org/simple/
 # Ubuntu 24.04 comes with a newer pip that disallows installing into the system site-packages,
 # so we explicitly ask it to allow it.
-pip install --user -r "${BASH_SOURCE%/*}/../common/shared/sbom_requirements.txt" --break-system-packages
+pip install --user -r "${BASH_SOURCE%/*}/../common/shared/requirements.txt" --break-system-packages
 
 source "${BASH_SOURCE%/*}/../common/unix/SetEnvVar.sh"
 # SetEnvVar "PATH" "/usr/lib/nodejs-mozilla/bin:\$PATH"
@@ -270,6 +269,12 @@ source "${BASH_SOURCE%/*}/../common/unix/SetEnvVar.sh"
 # 'The script sbom2doc is installed in '/home/qt/.local/bin' which is not on PATH.'
 # hence the explicit assignment to SBOM_PYTHON_APPS_PATH.
 SetEnvVar "SBOM_PYTHON_APPS_PATH" "/home/qt/.local/bin"
+
+gccVersion="$(gcc --version |grep -Eo '[0-9]+\.[0-9]+(\.[0-9]+)?' |head -n 1)"
+echo "GCC = $gccVersion" >> versions.txt
+
+glibcVersion="$(ldd --version |grep -Eo '[0-9]+\.[0-9]+(\.[0-9]+)?' |head -n 1)"
+echo "glibc = $glibcVersion" >> versions.txt
 
 OpenSSLVersion="$(openssl version |cut -b 9-14)"
 echo "System's OpenSSL = $OpenSSLVersion" >> ~/versions.txt

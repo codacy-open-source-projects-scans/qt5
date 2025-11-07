@@ -52,7 +52,7 @@
 	priority = 30
 [submodule "qtdoc"]
 	depends = qtdeclarative qttools
-	recommends = qtmultimedia qtshadertools qtwebengine
+	recommends = qtmultimedia qtshadertools qttasktree qtwebengine
 	path = qtdoc
 	url = ../qtdoc.git
 	branch = dev
@@ -193,14 +193,14 @@
 	path = qtcharts
 	url = ../qtcharts.git
 	branch = dev
-	status = addon
+	status = deprecated
 [submodule "qtdatavis3d"]
 	depends = qtbase
 	recommends = qtdeclarative qtmultimedia
 	path = qtdatavis3d
 	url = ../qtdatavis3d.git
 	branch = dev
-	status = addon
+	status = deprecated
 [submodule "qtvirtualkeyboard"]
 	depends = qtbase qtdeclarative qtsvg
 	recommends = qtmultimedia
@@ -337,3 +337,9 @@
 	url = ../qtgraphs.git
 	branch = dev
 	status = addon
+[submodule "qttasktree"]
+	depends = qtbase
+	path = qttasktree
+	url = ../qttasktree.git
+	branch = dev
+	status = preview

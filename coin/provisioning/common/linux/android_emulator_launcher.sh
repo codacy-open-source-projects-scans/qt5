@@ -7,15 +7,65 @@
 
 set -e
 
+function print_help {
+    echo "Usage: [ANDROID_EMULATOR=<name>] $0 [--avd <name>] [--window] [--help]"
+    echo ""
+    echo "This script launches the Android emulator on Qt CI."
+    echo ""
+    echo "Options:"
+    echo "  --avd <name>  Set the AVD name to launch (overrides ANDROID_EMULATOR env var)"
+    echo "  --window      Show the emulator window (default is headless via -no-window)"
+    echo "  --help        Show this help message"
+    echo ""
+}
+
+WINDOW_ARG="-no-window"
+AVD_NAME_ARG=""
+while [ $# -gt 0 ]; do
+    arg="$1"
+    case "$arg" in
+        --help)
+            print_help
+            exit 0
+            ;;
+        --window)
+            WINDOW_ARG=""
+            shift
+            ;;
+        --avd)
+            if [ -n "$2" ]; then
+                AVD_NAME_ARG="$2"
+                shift 2
+            else
+                echo "Error: --avd requires an argument"
+                exit 1
+            fi
+            ;;
+    esac
+done
+
 EMULATOR_MAX_RETRIES=3
 ADB_MAX_TIMEOUT=180
 EMULATOR_EXEC="$ANDROID_SDK_ROOT/emulator/emulator"
 ADB_EXEC="$ANDROID_SDK_ROOT/platform-tools/adb"
+
+if [ -z "$COIN_CTEST_RESULTSDIR" ]; then
+    COIN_CTEST_RESULTSDIR="$(pwd)"
+fi
+
 LOGCAT_PATH="$COIN_CTEST_RESULTSDIR/emulator_logcat_%iter.txt"
 EMULATOR_RUN_LOG_PATH="$COIN_CTEST_RESULTSDIR/emulator_run_log_%iter.txt"
 
-if [ -z "${ANDROID_EMULATOR}" ]; then
-    echo "No AVD name provided via ANDROID_EMULATOR env variable. Aborting!"
+if [ -n "$AVD_NAME_ARG" ]; then
+    AVD_NAME="$AVD_NAME_ARG"
+else
+    AVD_NAME="$ANDROID_EMULATOR"
+fi
+
+if [ -z "${AVD_NAME}" ]; then
+    echo "No AVD name provided via --avd option or ANDROID_EMULATOR env variable. Aborting!"
+    echo "Available AVDs names:"
+    $EMULATOR_EXEC -list-avds | sed 's/^/    /'
     exit 1
 fi
 
@@ -25,13 +75,12 @@ function check_for_android_device
 }
 
 # WARNING: On the very first boot of the emulator it happens that the device
-# "finishes" booting and getprop shows bootanim=stopped and
-# boot_completed=1. But sometimes not all packages have been installed (`pm
-# list packages` shows only 16 packages installed), and after around half a
-# minute the boot animation starts spinning (bootanim=running) again despite
-# boot_completed=1 all the time. After some minutes the boot animation stops
-# again and the list of packages contains 80 packages. Only then the device is
-# fully booted, and only then is dev.bootcomplete=1.
+# "finishes" booting and getprop shows boot_completed=1. But sometimes not all
+# packages have been installed (`pm list packages` shows only 16 packages
+# installed), and after around half a minute the boot animation starts spinning
+# again despite boot_completed=1 all the time. After some minutes the boot
+# animation stops again and the list of packages contains 80 packages.
+# Only then the device is fully booted, and only then is dev.bootcomplete=1.
 #
 # To reproduce the emulator booting as the first time, you have to delete the
 # cached images found inside $HOME/.android/avd/{avd_name}.avd/ especially the
@@ -39,11 +88,10 @@ function check_for_android_device
 function check_if_fully_booted
 {
     # The "getprop" command separates lines with \r\n so we trim them
-    bootanim=$(      timeout 1 "$ADB_EXEC" shell getprop init.svc.bootanim  | tr -d '\r\n')
     boot_completed=$(timeout 1 "$ADB_EXEC" shell getprop sys.boot_completed | tr -d '\r\n')
     bootcomplete=$(  timeout 1 "$ADB_EXEC" shell getprop dev.bootcomplete   | tr -d '\r\n')
-    echo "bootanim=$bootanim boot_completed=$boot_completed bootcomplete=$bootcomplete"
-    [ "$bootanim" = stopped ] && [ "$boot_completed" = 1 ] && [ "$bootcomplete" = 1 ]
+    echo "boot_completed=$boot_completed bootcomplete=$bootcomplete"
+    [ "$boot_completed" = 1 ] && [ "$bootcomplete" = 1 ]
 }
 
 for counter in $(seq ${EMULATOR_MAX_RETRIES})
@@ -61,10 +109,10 @@ do
     LOGCAT_PATH=${LOGCAT_PATH//%iter/${counter}}
     EMULATOR_RUN_LOG_PATH=${EMULATOR_RUN_LOG_PATH//%iter/${counter}}
 
-    echo "Starting emulator ${ANDROID_EMULATOR}, try ${counter}/${EMULATOR_MAX_RETRIES}" \
+    echo "Starting emulator ${AVD_NAME}, try ${counter}/${EMULATOR_MAX_RETRIES}" \
         | tee "${EMULATOR_RUN_LOG_PATH}"
-    $EMULATOR_EXEC -avd "$ANDROID_EMULATOR" \
-        -gpu swiftshader_indirect -no-audio -no-window -no-boot-anim \
+    $EMULATOR_EXEC -avd "$AVD_NAME" \
+        -gpu swiftshader_indirect -no-audio $WINDOW_ARG -no-boot-anim \
         -cores 4 -memory 16000 -partition-size 4096 \
         -detect-image-hang -restart-when-stalled -no-snapshot-save \
         -no-nested-warnings -logcat '*:v' -logcat-output "${LOGCAT_PATH}" \
@@ -72,7 +120,7 @@ do
     emulator_pid=$!
     disown $emulator_pid
 
-    echo "Waiting ${ADB_MAX_TIMEOUT} seconds for emulated device to appear..."
+    echo "Waiting ${ADB_MAX_TIMEOUT} seconds for emulated device to start..."
     timeout ${ADB_MAX_TIMEOUT} "$ADB_EXEC" wait-for-device
 
     # Due to some bug in Coin/Go, we can't have the emulator command stream
