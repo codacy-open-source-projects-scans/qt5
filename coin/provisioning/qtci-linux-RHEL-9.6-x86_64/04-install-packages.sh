@@ -168,6 +168,8 @@ installPackages+=(zip)
 installPackages+=(perl-IPC-Cmd)
 # password management support for Qt Creator
 installPackages+=(libsecret-devel)
+# for license-service library
+installPackages+=(libuuid-devel)
 # For Firebird in RTA
 installPackages+=(libtommath-devel)
 # For tst_license.pl with all the machines generating SBOM
@@ -175,7 +177,7 @@ installPackages+=(perl-JSON)
 
 sudo yum -y install "${installPackages[@]}"
 
-sudo dnf install nodejs-16.14.0-4.el9_0 -y
+sudo dnf -y module install nodejs:22
 # Required by QtCore
 sudo dnf install 'perl(English)' -y
 

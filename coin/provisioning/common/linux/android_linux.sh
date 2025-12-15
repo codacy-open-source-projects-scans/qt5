@@ -6,7 +6,7 @@
 
 # It also runs update for SDK API, latest SDK tools, latest platform-tools and build-tools version
 
-set -e
+set -ex
 
 # shellcheck source=../unix/DownloadURL.sh
 source "${BASH_SOURCE%/*}/../unix/DownloadURL.sh"
@@ -22,11 +22,12 @@ sudo mkdir -p "$sdkTargetFolder"
 
 basePath="http://ci-files01-hki.ci.qt.io/input/android"
 
-toolsVersion="2.1"
-toolsFile="commandlinetools-linux-6609375_latest.zip"
+toolsVersion="19.0"
+toolsFile="commandlinetools-linux-13114758_latest.zip"
+toolsBackupUrl="https://dl.google.com/android/repository/$toolsFile"
 sdkBuildToolsVersion="35.0.1"
 sdkApiLevel="android-35"
-toolsSha1="9172381ff070ee2a416723c1989770cf4b0d1076"
+toolsSha1="5fdcc763663eefb86a5b8879697aa6088b041e70"
 
 ndkVersionLatest="r27c"
 ndkSha1Latest="090e8083a715fdb1a3e402d0763c388abb03fb4e"
@@ -57,10 +58,16 @@ toolsTargetFile="/tmp/$toolsFile"
 toolsSourceFile="$basePath/$toolsFile"
 
 echo "Download and unzip Android SDK"
-DownloadURL "$toolsSourceFile" "$toolsSourceFile" "$toolsSha1" "$toolsTargetFile"
+DownloadURL "$toolsSourceFile" "$toolsBackupUrl" "$toolsSha1" "$toolsTargetFile"
 echo "Unzipping Android Tools to '$sdkTargetFolder'"
 sudo unzip -q "$toolsTargetFile" -d "$sdkTargetFolder"
 rm "$toolsTargetFile"
+
+# Android Command-Line Tools unpacks a directory 'cmdline-tools'. Due
+# to existing code, we need to move it into 'cmdline-tools/tools'
+sudo mv "$sdkTargetFolder/cmdline-tools" "$sdkTargetFolder/tools"
+sudo mkdir "$sdkTargetFolder/cmdline-tools"
+sudo mv "$sdkTargetFolder/tools" "$sdkTargetFolder/cmdline-tools"
 
 function InstallNdk() {
 
@@ -115,9 +122,6 @@ sdkmanager_no_progress_bar_cmd="tr '\r' '\n'  |  grep -v '^\[[ =]*\]'"
 # But don't let the pipeline hide sdkmanager failures.
 set -o pipefail
 
-sudo mkdir "$sdkTargetFolder/cmdline-tools"
-sudo mv "$sdkTargetFolder/tools" "$sdkTargetFolder/cmdline-tools"
-
 echo "Running SDK manager for platforms;$sdkApiLevel, platform-tools and build-tools;$sdkBuildToolsVersion."
 # shellcheck disable=SC2031
 if [ "$http_proxy" != "" ]; then
@@ -145,7 +149,9 @@ cat >>~/versions.txt <<EOB
 Android SDK tools = $toolsVersion
 Android SDK Build Tools = $sdkBuildToolsVersion
 Android SDK API level = $sdkApiLevel
-Android NDK = $ndkVersion
+Android NDK latest = $ndkVersionLatest
+Android NDK nightly1 = $ndkVersionNightly1
+Android NDK nightly2 = $ndkVersionNightly2
 EOB
 
 cd "$sdkTargetFolder/cmdline-tools/tools/bin"
@@ -178,44 +184,26 @@ echo "Unzipping the Android 9 to $minVersionDestination"
 sudo unzip -o -q "$minVersionFilePath" -d "$minVersionDestination"
 rm "$minVersionFilePath"
 
-echo "Download and unzip Android 15 System Image"
-maxVersionFileName="x86_64-35_r08.zip"
-maxVersionDestination="$sdkTargetFolder/system-images/android-35/google_apis/"
+echo "Download and unzip Android 16 System Image"
+maxVersionFileName="x86_64-36_r07.zip"
+maxVersionDestination="$sdkTargetFolder/system-images/android-36/google_apis/"
 maxVersionFilePath="$maxVersionDestination/$maxVersionFileName"
 maxVersionCiUrl="$basePath/system_images/google_apis/$maxVersionFileName"
 maxVersionUrl="https://dl.google.com/android/repository/sys-img/google_apis/$maxVersionFileName"
-maxVersionSha1="d79169884cabc6680cb29d32c2112ad46c858c1b"
+maxVersionSha1="c6bf44bdcd885bb902b4ba752d111a073ad7a817"
 
 mkdir -p "$maxVersionDestination"
 DownloadURL "$maxVersionCiUrl" "$maxVersionUrl" "$maxVersionSha1" "$maxVersionFilePath"
 
-echo "Unzipping the Android 15 to $maxVersionDestination"
+echo "Unzipping the Android 16 to $maxVersionDestination"
 sudo unzip -o -q "$maxVersionFilePath" -d "$maxVersionDestination"
 rm "$maxVersionFilePath"
-
-echo "Download and unzip Android 16 System Image for insignificant"
-insignificantMaxVersionFileName="x86_64-36_r06.zip"
-insignificantMaxVersionDestination="$sdkTargetFolder/system-images/android-36/google_apis/"
-insignificantMaxVersionFilePath="$insignificantMaxVersionDestination/$insignificantMaxVersionFileName"
-insignificantMaxVersionCiUrl="$basePath/system_images/google_apis/$insignificantMaxVersionFileName"
-insignificantMaxVersionUrl="https://dl.google.com/android/repository/sys-img/google_apis/$insignificantMaxVersionFileName"
-insignificantMaxVersionSha1="a9b0b4a0488e0c6c380f5485507950f011388511"
-
-mkdir -p "$insignificantMaxVersionDestination"
-DownloadURL "$insignificantMaxVersionCiUrl" "$insignificantMaxVersionUrl" "$insignificantMaxVersionSha1" "$insignificantMaxVersionFilePath"
-
-echo "Unzipping the Android 16 insignicant to $insignificantMaxVersionDestination"
-sudo unzip -o -q "$insignificantMaxVersionFilePath" -d "$insignificantMaxVersionDestination"
-rm "$insignificantMaxVersionFilePath"
 
 echo "Checking the contents of Android SDK again..."
 ls -l "$sdkTargetFolder"
 
 echo "no" | ./avdmanager create avd -n emulator_x86_api_28 -c 2048M -f \
     -k "system-images;android-28;google_apis;x86"
-
-echo "no" | ./avdmanager create avd -n emulator_x86_64_api_35 -c 2048M -f \
-    -k "system-images;android-35;google_apis;x86_64"
 
 echo "no" | ./avdmanager create avd -n emulator_x86_64_api_36 -c 2048M -f \
     -k "system-images;android-36;google_apis;x86_64"
@@ -240,7 +228,7 @@ echo "no" | ./avdmanager create avd -n automotive_emulator_x86_64_api_29 -c 2048
 # To be used by the VMs to start the emulator for tests
 emulator_script_filename="android_emulator_launcher.sh"
 scripts_dir_name="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
-cp "${scripts_dir_name}/${emulator_script_filename}" "${HOME}"
+cp "${scripts_dir_name}/../unix/${emulator_script_filename}" "${HOME}"
 ANDROID_EMULATOR_RUNNER="${HOME}/${emulator_script_filename}"
 SetEnvVar "ANDROID_EMULATOR_RUNNER" "$ANDROID_EMULATOR_RUNNER"
 

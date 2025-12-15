@@ -19,7 +19,7 @@ Configurations:
     Id: 'windows-11_23h2-arm64-msvc2022-minimal-static-test'
     Template: 'qtci-windows-11_23H2-aarch64-53'
     Compiler: 'MSVC2022'
-    Features: ['UseConfigure', 'InsignificantTests', 'Packaging', 'MinimalStaticTests']
+    Features: ['Sccache', 'UseConfigure', 'InsignificantTests', 'Packaging', 'MinimalStaticTests']
     Configure arguments: '-static -release -headersclean -nomake examples -qt-libjpeg -no-icu -qt-doubleconversion -qt-zlib -c++std c++17 -no-sql-psql'
     Environment variables: [
         'CMAKE_ARGS=-DFEATURE_msvc_obj_debug_info=ON -DOPENSSL_ROOT_DIR={{.Env.OPENSSL_INCLUDE_arm64}}\..',
@@ -29,8 +29,8 @@ Configurations:
         'Protobuf_ROOT={{.Env.Protobuf_ROOT_msvc}}',
     ]
 -
-    Id: 'rhel-8.10-minimal-static-test'
-    Template: 'qtci-linux-RHEL-8.10-x86_64-51'
+    Id: 'rhel-9.6-minimal-static-test'
+    Template: 'qtci-linux-RHEL-9.6-x86_64-51'
     Compiler: 'GCC'
     Features: ['Packaging', 'Sccache', 'UseConfigure', 'InstallQt5Dependencies', 'MinimalStaticTests']
     Configure arguments: '-static -nomake examples -release -qt-libjpeg -no-icu -qt-libpng -qt-pcre -qt-harfbuzz -qt-doubleconversion -no-libudev -bundled-xcb-xinput'
@@ -44,7 +44,7 @@ Configurations:
     Id: 'ubuntu-24.04-arm64'
     Template: 'qtci-linux-Ubuntu-24.04-aarch64-52'
     Compiler: 'GCC'
-    Features: ['Packaging', 'UseConfigure', 'InstallQt5Dependencies', 'DoNotRunTests']
+    Features: ['Sccache', 'Packaging', 'UseConfigure', 'InstallQt5Dependencies', 'DoNotRunTests']
     Configure arguments: '-static -nomake examples -release -qt-libjpeg -qt-libpng -qt-pcre -qt-harfbuzz -no-libudev -bundled-xcb-xinput -no-icu -qt-doubleconversion'
     Environment variables: [
         'CMAKE_ARGS=-DOpenGL_GL_PREFERENCE=LEGACY',
