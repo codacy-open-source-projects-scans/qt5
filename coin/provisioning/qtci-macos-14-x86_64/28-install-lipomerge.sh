@@ -3,4 +3,4 @@
 set -ex
 
 BASEDIR=$(dirname "$0")
-"$BASEDIR/../common/unix/install-vcpkg.sh"
+"$BASEDIR/../common/macos/install-lipomerge.sh"
